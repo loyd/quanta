@@ -348,7 +348,18 @@ impl Clock {
     /// to return a monotonically increasing value between calls to the same `Clock` instance.
     ///
     /// Returns an [`Instant`].
+    #[inline(always)]
     pub fn now(&self) -> Instant {
+        if let ClockType::Counter(_, counter, _) = &self.inner {
+            return self.scaled(counter.now());
+        }
+
+        self.slow_now()
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn slow_now(&self) -> Instant {
         match &self.inner {
             ClockType::Monotonic(monotonic) => Instant(monotonic.now()),
             ClockType::Counter(_, counter, _) => self.scaled(counter.now()),
